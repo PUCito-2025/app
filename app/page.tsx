@@ -9,6 +9,7 @@ export default function HomePage() {
       <HeroSection />
       <FeaturedCars />
       <MarketTrends />
+
       <Footer />
     </div>
   );
