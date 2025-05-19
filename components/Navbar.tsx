@@ -1,7 +1,7 @@
 "use client";
 
 import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
-import { Car, Heart, LineChart, Menu, Search } from "lucide-react";
+import { Book, Menu } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -17,14 +17,9 @@ export default function Navbar() {
         {/* Logo + Search */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2 text-xl font-bold">
-            <Car className="h-6 w-6 text-blue-600" />
+            <Book className="h-6 w-6 text-blue-600" />
             <span>PUCito</span>
           </Link>
-
-          <div className="relative hidden items-center md:flex">
-            <Input type="text" placeholder="Search cars, brands, or models..." className="w-80 pr-10" />
-            <Search className="absolute top-2.5 right-3 h-4 w-4 text-gray-500" />
-          </div>
         </div>
 
         {/* Desktop Nav Links */}
@@ -32,20 +27,13 @@ export default function Navbar() {
           <Link href="/" className="text-blue-600">
             Home
           </Link>
-          <Link href="/browse">Browse</Link>
-          <Link href="/trends" className="flex items-center gap-1">
-            <LineChart className="h-4 w-4" />
-            Trends
-          </Link>
+          <Link href="/canvasInfo">Canvas</Link>
+          <Link href="/tracker">Planificador</Link>
           <SignedOut>
             <SignInButton mode="modal" />
             <SignUpButton mode="modal" />
           </SignedOut>
           <SignedIn>
-            <Link href="/wishlist" className="flex items-center gap-1">
-              <Heart className="h-4 w-4" />
-              Wishlist
-            </Link>
             <UserButton />
           </SignedIn>
         </div>
@@ -64,16 +52,16 @@ export default function Navbar() {
             <Link href="/" className="text-blue-600">
               Home
             </Link>
-            <Link href="/browse">Browse</Link>
-            <Link href="/wishlist" className="flex items-center gap-1">
-              <Heart className="h-4 w-4" />
-              Wishlist
-            </Link>
-            <Link href="/trends" className="flex items-center gap-1">
-              <LineChart className="h-4 w-4" />
-              Trends
-            </Link>
-            <Button className="w-full">Sign In</Button>
+            <Link href="/canvasInfo">Canvas</Link>
+            <Link href="/tracker">Planificador</Link>
+            <SignedOut>
+              <SignInButton mode="modal">
+                <Button className="w-full">Sign In</Button>
+              </SignInButton>
+            </SignedOut>
+            <SignedIn>
+              <UserButton />
+            </SignedIn>
           </div>
         </div>
       )}
