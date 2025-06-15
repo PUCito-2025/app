@@ -5,7 +5,6 @@ interface CarCardProps {
   km: string;
   fuel: string;
 }
-
 export default function CarCard({ title, price, platform, km, fuel }: CarCardProps) {
   return (
     <div className="rounded-lg border bg-white p-4 shadow-sm">
