@@ -1,5 +1,0 @@
-echo "🔄 Generating Prisma client…"
-npx prisma generate
-
-echo "🧹 Running lint-staged…"
-npx lint-staged
