@@ -1,8 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// Schema docs: https://pris.ly/d/prisma-schema
+// Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
   provider = "prisma-client-js"
@@ -15,94 +12,60 @@ datasource db {
   directUrl = env("DIRECT_DATABASE_URL")
 }
 
-model Brand {
-  id      String    @id @default(uuid())
-  name    String
-  models  Model[]
+
+model Semester {
+  id           Int       @id @default(autoincrement())
+  semesterDate DateTime
+  userId       Int
+  courses      Course[]  @relation("SemesterCourses")
 }
 
-model Model {
-  id          String      @id @default(uuid())
+model Course {
+  id          Int         @id @default(autoincrement())
+  code        String
   name        String
-  bodyType    String
-  brandId     String
-  brand       Brand       @relation(fields: [brandId], references: [id])
-  versions    Version[]
+  semesterId  Int
+  semester    Semester    @relation("SemesterCourses", fields: [semesterId], references: [id])
+  assignments Assignment[]      @relation("CourseAssignments")
+  studyPlans  StudyPlan[] @relation("CourseStudyPlans")
 }
 
-model Version {
-  id              String      @id @default(uuid())
-  versionName     String
-  year            Int
-  modelId         String
-  model           Model       @relation(fields: [modelId], references: [id])
-  trims           Trim[]
+model Assignment {
+  id             Int             @id @default(autoincrement())
+  title          String
+  dueDate        DateTime
+  courseId       Int
+  course         Course          @relation("CourseAssignments", fields: [courseId], references: [id])
+  notifications  Notification[]  @relation("AssignmentNotifications")
 }
 
-model Trim {
-  id              String        @id @default(uuid())
-  name            String
-  motorSize       Int
-  fuelType        String
-  transmissionType String
-  versionId       String
-  version         Version       @relation(fields: [versionId], references: [id])
-  carListings     CarListing[]
+model StudyPlan {
+  id                 Int              @id @default(autoincrement())
+  studiedHours       Int
+  recommendedHours   Int
+  planDate           DateTime
+  userId             String
+  courseId           Int
+  course             Course           @relation("CourseStudyPlans", fields: [courseId], references: [id])
+  notifications      Notification[]   @relation("StudyPlanNotifications")
 }
 
-model Source {
-  id          String        @id @default(uuid())
-  baseUrl     String
-  name        String
-  carListings CarListing[]
+
+enum NotificationType {
+  STUDY_PLAN
+  ASSIGNMENT
 }
 
-model Seller {
-  id          String        @id @default(uuid())
-  name        String
-  email       String
-  phone       String
-  type        String
-  carListings CarListing[]
-}
+model Notification {
+  id             Int              @id @default(autoincrement())
+  type           NotificationType
+  title          String
+  message        String
+  isRead         Boolean          @default(false)
 
-model CarListing {
-  id            String      @id @default(uuid())
-  sellerId      String
-  seller        Seller      @relation(fields: [sellerId], references: [id])
-  sourceId      String
-  source        Source      @relation(fields: [sourceId], references: [id])
-  url           String
-  title         String
-  description   String
-  price         Decimal
-  priceCurrency String
-  trimId        String
-  trim          Trim        @relation(fields: [trimId], references: [id])
-  year          Int
-  mileage       Int
-  exteriorColor String
-  interiorColor String
-  isNew         Boolean
-  location      String
-  publishedAt   DateTime
-  scrapedAt     DateTime
-  images        Image[]
-  priceHistory  PriceHistory[]
-}
-
-model Image {
-  id          String      @id @default(uuid())
-  listingId   String
-  carListing  CarListing  @relation(fields: [listingId], references: [id])
-  url         String
-}
-
-model PriceHistory {
-  id            String    @id @default(uuid())
-  price         Decimal
-  priceCurrency String
-  recordedAt    DateTime
-  listingId     String
-  carListing    CarListing @relation(fields: [listingId], references: [id])
+  userId         String
+  assignmentId   Int?
+  assignment     Assignment?      @relation("AssignmentNotifications", fields: [assignmentId], references: [id])
+  studyPlanId    Int?
+  studyPlan      StudyPlan? @relation("StudyPlanNotifications", fields: [studyPlanId], references: [id])
 }
