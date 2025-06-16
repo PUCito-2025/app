@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const CANVAS_API_URL = 'https://cursos.canvas.uc.cl/api/v1';
-
+const token = process.env.CANVAS_TOKEN;
 export async function GET(req: NextRequest) {
-    const token = req.headers.get('authorization')?.replace('Bearer ', '');
-
     if (!token) {
         return NextResponse.json({ error: 'Missing Authorization token' }, { status: 401 });
     }
-
+    console.log("Canvas Token:", token); // Debugging line to check if token is available
     // 1. Obtener cursos
     const coursesRes = await fetch(`${CANVAS_API_URL}/courses`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -73,14 +71,23 @@ export async function GET(req: NextRequest) {
         return !lockAt || lockAt > now;
     });
 
-    const formatted = activeAssignments.map((event: any) => ({
-        id: event.id,
-        title: event.title,
-        start: event.assignment?.due_at || event.start_at,
-        end: event.assignment?.lock_at || event.end_at,
-        description: event.assignment?.description || event.description || '',
-        url: event.html_url,
-    }));
+    const formatted = activeAssignments.map((event: any) => {
+        let start = event.assignment?.due_at || event.start_at;
+        let end = event.assignment?.lock_at || event.end_at;
+        let start_edited = new Date(new Date(start).getTime() - 60 * 1000).toISOString();
+        // If end is the same as start, add 1 minute
+        if (end === start) {
+            start = start_edited;
+        }
+        return {
+            id: event.id,
+            title: event.title,
+            start: start_edited || start,
+            ...(end && end !== start ? { end } : {}),
+            description: event.assignment?.description || event.description || '',
+            url: event.html_url,
+        };
+    });
 
     return NextResponse.json(formatted);
 }
