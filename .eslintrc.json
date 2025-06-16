@@ -1,0 +1,140 @@
+// .eslintrc.json
+{
+  "root": true,
+  "ignorePatterns": [
+    "**/*.js",
+    "**/__snapshots__/*",
+    "prisma/generated/**",
+    "node_modules/"
+  ],
+  "extends": [
+    "next/core-web-vitals",
+    "next/typescript",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:react/recommended",
+    "plugin:react-hooks/recommended",
+    "plugin:react/jsx-runtime",
+    "airbnb",
+    "airbnb-typescript",
+    "prettier"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "project": "./tsconfig.json",
+    "ecmaVersion": 2022,
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    },
+    "warnOnUnsupportedTypeScriptVersion": false
+  },
+  "plugins": [
+    "@typescript-eslint",
+    "react",
+    "react-hooks",
+    "import",
+    "filename-export",
+    "prettier",
+    "vitest"
+  ],
+  "rules": {
+    // React
+    "react/prop-types": "off",
+    "react/jsx-props-no-spreading": "off",
+    "react/require-default-props": "off",
+    "react/react-in-jsx-scope": "off",
+    // Imports
+    "import/prefer-default-export": "off",
+    "import/no-extraneous-dependencies": [
+      "error",
+      {
+        "devDependencies": true
+      }
+    ],
+    "import/order": [
+      "error",
+      {
+        "groups": [
+          [
+            "builtin",
+            "external"
+          ],
+          "internal",
+          [
+            "parent",
+            "sibling",
+            "index"
+          ]
+        ],
+        "pathGroups": [
+          {
+            "pattern": "@/**",
+            "group": "internal",
+            "position": "before"
+          }
+        ],
+        "pathGroupsExcludedImportTypes": [
+          "internal"
+        ],
+        "alphabetize": {
+          "order": "asc",
+          "caseInsensitive": true
+        },
+        "newlines-between": "always"
+      }
+    ],
+    // Filename export
+    "filename-export/match-default-export": "off",
+    // Vitest
+    "vitest/vitest-in-dependencies": "off",
+    // Prettier
+    "prettier/prettier": [
+      "error"
+    ],
+    // Misc
+    "max-len": [
+      "error",
+      {
+        "code": 120
+      }
+    ],
+    "@typescript-eslint/no-non-null-assertion": "error",
+    "no-plusplus": [
+      "error",
+      {
+        "allowForLoopAfterthoughts": true
+      }
+    ],
+    "camelcase": [
+      "error",
+      {
+        "properties": "always"
+      }
+    ],
+    "no-trailing-spaces": [
+      "error",
+      {
+        "skipBlankLines": false
+      }
+    ],
+    "react/function-component-definition": "off"
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  },
+  "overrides": [
+    {
+      "files": [
+        "**/app/**/page.tsx",
+        "**/app/**/layout.tsx",
+        "stories/**",
+        "stores/**"
+      ],
+      "rules": {
+        "filename-export/match-default-export": "off"
+      }
+    }
+  ]
+}

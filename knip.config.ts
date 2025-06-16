@@ -1,4 +1,3 @@
-// knip.config.ts
 /**
  * @type {import('knip/dist/types').Config}
  */
