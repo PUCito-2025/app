@@ -567,10 +567,10 @@ exports[`BrowsePage matches snapshot 1`] = `
       </div>
     </div>
     <footer
-      class="bg-blue-950 px-6 py-12 text-white"
+      class="bg-blue-950 px-6 py-6 text-white"
     >
       <div
-        class="mx-auto grid max-w-7xl grid-cols-1 gap-8 text-sm md:grid-cols-4"
+        class="mx-auto grid max-w-7xl grid-cols-1 gap-8 text-xs md:grid-cols-4"
       >
         <div>
           <h3
@@ -579,7 +579,7 @@ exports[`BrowsePage matches snapshot 1`] = `
             PUCito
           </h3>
           <p>
-            Your trusted platform for comparing used cars across Chile.
+            Your trusted platform for studying across Canvas.
           </p>
           <div
             class="mt-3 flex gap-3"
@@ -594,26 +594,6 @@ exports[`BrowsePage matches snapshot 1`] = `
               class="h-5 w-5 rounded-full bg-white"
             />
           </div>
-        </div>
-        <div>
-          <h4
-            class="mb-2 font-semibold"
-          >
-            Quick Links
-          </h4>
-          <ul
-            class="space-y-1"
-          >
-            <li>
-              Home
-            </li>
-            <li>
-              Browse Cars
-            </li>
-            <li>
-              Market Trends
-            </li>
-          </ul>
         </div>
         <div>
           <h4
@@ -660,7 +640,7 @@ exports[`BrowsePage matches snapshot 1`] = `
         </div>
       </div>
       <div
-        class="mt-10 text-center text-xs opacity-70"
+        class="mt-4 text-center text-xs opacity-70"
       >
         © 2025 PUCito. All rights reserved.
       </div>
