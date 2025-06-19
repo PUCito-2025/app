@@ -7,6 +7,8 @@ import CardCourse from "@/components/CardCourse";
 import EventDot from "@/components/EventDot";
 import "react-calendar/dist/Calendar.css";
 
+import GeminiModal from "@/components/GeminiModal";
+
 type Course = {
   id: number;
   name: string;
@@ -33,6 +35,45 @@ export default function CanvasInfoPage() {
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [loadingGemini, setLoadingGemini] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [geminiResponse, setGeminiResponse] = useState("");
+
+  const simulateStream = async (text: string) => {
+    setGeminiResponse("");
+    setModalOpen(true);
+    for (let i = 0; i < text.length; i++) {
+      await new Promise((r) => setTimeout(r, 15));
+      setGeminiResponse((prev) => prev + text[i]);
+    }
+  };
+
+  const handleGeminiClick = async () => {
+    if (!selectedCourse) return;
+    setLoadingGemini(true);
+
+    try {
+      const prompt = `Responde en no mas de 200 palabras:
+        Quiero una recomendación personalizada para el curso "${selectedCourse.name}"
+        (Código: ${selectedCourse.course_code}), cuyo estado es "${selectedCourse.workflow_state}".
+        ¿Qué estrategias puedo seguir para tener éxito en este curso?`;
+
+      const res = await fetch("/api/recomendations", {
+        method: "POST",
+        body: JSON.stringify({ prompt }),
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = await res.json();
+      await simulateStream(data.data);
+    } catch (error) {
+      setGeminiResponse("Hubo un error al obtener la recomendación.");
+      setModalOpen(true);
+    } finally {
+      setLoadingGemini(false);
+    }
+  };
+
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -112,6 +153,15 @@ export default function CanvasInfoPage() {
               ))}
             </ul>
           )}
+           <div className="mt-6">
+              <button
+                onClick={handleGeminiClick}
+                disabled={loadingGemini}
+                className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+              >
+                {loadingGemini ? "Consultando..." : "Recomendar con Gemini"}
+              </button>
+            </div>
         </div>
       )}
 
@@ -157,6 +207,12 @@ export default function CanvasInfoPage() {
           </div>
         )}
       </div>
+
+      <GeminiModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        message={geminiResponse}
+      />
     </div>
   );
 }
