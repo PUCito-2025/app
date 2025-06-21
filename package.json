@@ -37,7 +37,6 @@
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.3.0",
-
     "@types/date-fns": "^2.6.3",
     "@types/node": "^22.15.17",
     "@types/react": "^19.1.2",
@@ -71,5 +70,14 @@
     "typescript": "^5.8.3",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.1.2"
-  }
+  },
+  "description": "Proyecto construido con Next.js, TypeScript y Clerk para autenticación, incluyendo un pipeline de CI/CD con GitHub Actions y despliegue en Vercel.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "lib": "lib"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }

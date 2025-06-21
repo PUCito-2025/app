@@ -5,7 +5,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useUser } from "@clerk/nextjs";
+import { PrismaClient } from '@prisma/client';
 
+const prisma = new PrismaClient();
 const hardcodedClasses = [
   {
     name: "Matemática",
@@ -49,6 +52,15 @@ const StudyTracker = () => {
     setHoursInput(newInputs);
   };
 
+  async function getStudyPlansByUserId(user_id: string | undefined) {
+  const studyplans = await prisma.StudyPlan.findMany({
+    where: {
+      userId: user_id, // assuming `id` is the column storing the user ID
+    },
+  });
+  return studyplans;
+}
+
   return (
     <div className="space-y-8 p-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -59,6 +71,9 @@ const StudyTracker = () => {
               <p>Horas recomendadas: {cls.recommended}</p>
               <p>Horas estudiadas: {cls.studied}</p>
               <p>Horas restantes: {Math.max(0, cls.recommended - cls.studied)}</p>
+              <p>study plan: {getStudyPlansByUserId(useUser().user?.id)};</p>
+              {/* MOSTRAR USER ID */}
+              <p className="text-sm text-gray-500">ID de usuario: {useUser().user?.id}</p>
               <div className="mt-2 flex space-x-2">
                 <Input
                   type="number"
@@ -95,4 +110,3 @@ const StudyTracker = () => {
 };
 
 export default StudyTracker;
-
