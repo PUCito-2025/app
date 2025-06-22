@@ -1,101 +1,142 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
+import { createClient } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useUser } from "@clerk/nextjs";
 
-const hardcodedClasses = [
-  {
-    name: "Matemática",
-    recommended: 6,
-    studied: 2,
-    alert: "¡Alerta! Hay prueba la próxima semana.",
-  },
-  {
-    name: "Historia",
-    recommended: 4,
-    studied: 1,
-    alert: "",
-  },
-  {
-    name: "Inglés",
-    recommended: 3,
-    studied: 2,
-    alert: "",
-  },
-  {
-    name: "Software",
-    recommended: 5,
-    studied: 4,
-    alert: "¡Alerta! Hay prueba la próxima semana.",
-  },
-];
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
-const StudyTracker = () => {
-  const [classes, setClasses] = useState(hardcodedClasses);
-  const [hoursInput, setHoursInput] = useState(Array(hardcodedClasses.length).fill(""));
-
-  const handleRegisterHours = (index: number) => {
-    const newClasses = [...classes];
-    const addedHours = parseFloat(hoursInput[index]);
-    if (!Number.isNaN(addedHours)) {
-      newClasses[index].studied += addedHours;
-    }
-    setClasses(newClasses);
-    const newInputs = [...hoursInput];
-    newInputs[index] = "";
-    setHoursInput(newInputs);
-  };
-
-
-  return (
-    <div className="space-y-8 p-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {classes.map((cls, index) => (
-          <Card key={cls.name} className="rounded-2xl bg-white p-4 shadow">
-            <CardContent>
-              <h2 className="mb-2 text-xl font-bold">{cls.name}</h2>
-              <p>Horas recomendadas: {cls.recommended}</p>
-              <p>Horas estudiadas: {cls.studied}</p>
-              <p>Horas restantes: {Math.max(0, cls.recommended - cls.studied)}</p>
-              <p>study plan: {getStudyPlansByUserId(useUser().user?.id)};</p>
-              {/* MOSTRAR USER ID */}
-              <p className="text-sm text-gray-500">ID de usuario: {useUser().user?.id}</p>
-              <div className="mt-2 flex space-x-2">
-                <Input
-                  type="number"
-                  min="0"
-                  value={hoursInput[index]}
-                  onChange={(e) => {
-                    const newInputs = [...hoursInput];
-                    newInputs[index] = e.target.value;
-                    setHoursInput(newInputs);
-                  }}
-                  placeholder="Horas"
-                />
-                <Button onClick={() => handleRegisterHours(index)}>Registrar</Button>
-              </div>
-              {cls.alert && <p className="mt-2 font-semibold text-red-600">{cls.alert}</p>}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-      <div className="mt-10">
-        <h2 className="mb-4 text-2xl font-bold">Calendario de estudio</h2>
-        <div className="grid grid-cols-7 gap-2 text-center">
-          {[...Array(7)].map((_, dayIndex) => (
-            <div className="rounded-xl bg-blue-100 p-2">
-              Día {dayIndex + 1}
-              <div className="mt-1 text-sm">Horas: 3</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+type CourseWithPlans = {
+  id: number;
+  name: string;
+  code: string;
+  StudyPlan: {
+    id: number;
+    studiedHours: number;
+    recommendedHours: number;
+    planDate: string;
+  }[];
 };
 
-export default StudyTracker;
+export default function StudyTracker() {
+  const [courses, setCourses] = useState<CourseWithPlans[]>([]);
+  const [hoursInput, setHoursInput] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+
+  const today = new Date();
+  const week = [...Array(7)].map((_, i) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() + i);
+    return date.toISOString().split("T")[0]; // 'YYYY-MM-DD'
+  });
+
+  useEffect(() => {
+    async function fetchCourses() {
+      const { data, error } = await supabase
+        .from("Course")
+        .select("id, name, code, StudyPlan(id, studiedHours, recommendedHours, planDate)");
+
+      if (error) {
+        console.error("Error fetching courses:", error);
+      } else {
+        setCourses(data || []);
+      }
+      setLoading(false);
+    }
+
+    fetchCourses();
+  }, []);
+
+  const handleRegisterHours = async (courseId: number, date: string) => {
+    const key = `${courseId}-${date}`;
+    const hours = parseFloat(hoursInput[key] || "0");
+    if (isNaN(hours)) return;
+
+    const { data: existing, error: findError } = await supabase
+      .from("StudyPlan")
+      .select("*")
+      .eq("courseId", courseId)
+      .eq("planDate", date)
+      .single();
+
+    if (findError && findError.code !== "PGRST116") {
+      console.error("Error checking existing plan:", findError);
+      return;
+    }
+
+    if (existing) {
+      await supabase
+        .from("StudyPlan")
+        .update({ studiedHours: existing.studiedHours + hours })
+        .eq("id", existing.id);
+    } else {
+      await supabase.from("StudyPlan").insert({
+        courseId,
+        planDate: date,
+        studiedHours: hours,
+        recommendedHours: 0, // or customize
+        userId: "dev-user",  // replace with auth user ID if available
+      });
+    }
+
+    setHoursInput((prev) => ({ ...prev, [key]: "" }));
+    location.reload(); // Refresh view; you can improve this with a re-fetch instead
+  };
+
+  if (loading) return <p>Cargando...</p>;
+
+  return (
+    <div className="space-y-10 p-6">
+      {courses.map((course) => (
+        <Card key={course.id} className="bg-white shadow rounded-2xl p-4">
+          <CardContent>
+            <h2 className="text-xl font-bold mb-4">
+              {course.name} ({course.code})
+            </h2>
+            <div className="grid grid-cols-7 gap-2 text-center">
+              {week.map((day) => {
+                const plan = course.StudyPlan.find((p) => p.planDate.startsWith(day));
+                const studied = plan?.studiedHours ?? 0;
+                const recommended = plan?.recommendedHours ?? 0;
+                const key = `${course.id}-${day}`;
+
+                return (
+                  <div key={day} className="rounded-xl bg-blue-100 p-2 text-sm">
+                    <div>{new Date(day).toLocaleDateString("es-CL", { weekday: "short" })}</div>
+                    <div>Recomendado: {recommended}</div>
+                    <div>Estudiado: {studied}</div>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={hoursInput[key] || ""}
+                      onChange={(e) =>
+                        setHoursInput((prev) => ({
+                          ...prev,
+                          [key]: e.target.value,
+                        }))
+                      }
+                      placeholder="Horas"
+                      className="mt-1"
+                    />
+                    <Button
+                      size="sm"
+                      className="mt-1"
+                      onClick={() => handleRegisterHours(course.id, day)}
+                    >
+                      Registrar
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
