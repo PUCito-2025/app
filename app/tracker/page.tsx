@@ -6,7 +6,7 @@ import { useUser } from "@clerk/nextjs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -23,107 +23,111 @@ export default function StudyPlanner() {
   const [date, setDate] = useState("");
   const [hours, setHours] = useState("");
   const [loading, setLoading] = useState(true);
+  const [weekStart, setWeekStart] = useState(new Date());
 
-  // Generate an array of 7 days (ISO strings) starting from today
-  const weekDates = [...Array(7)].map((_, i) => {
+  // Ajusta inicio de semana a lunes
+  useEffect(() => {
     const d = new Date();
-    d.setDate(d.getDate() + i);
-    return d.toISOString().split("T")[0];
-  });
+    const diff = d.getDay() === 0 ? -6 : 1 - d.getDay();
+    setWeekStart(addDays(d, diff));
+  }, []);
 
+  // Carga datos de cursos y planes de estudio
   useEffect(() => {
     if (!userId) return;
-
-    const fetchData = async () => {
-      const { data: courseData, error: courseError } = await supabase
-        .from("Course")
-        .select("id, name, code");
-
-      const { data: planData, error: planError } = await supabase
-        .from("StudyPlan")
-        .select("*")
-        .eq("userId", userId);
-
-      if (!courseError && !planError) {
-        setCourses(courseData || []);
-        setStudyPlans(planData || []);
-      } else {
-        console.error("Error fetching data:", courseError ?? planError);
-      }
-
+    (async () => {
+      const [{ data: cData }, { data: pData }] = await Promise.all([
+        supabase.from("Course").select("id, name, code"),
+        supabase.from("StudyPlan").select("*").eq("userId", userId),
+      ]);
+      setCourses(cData || []);
+      setStudyPlans(pData || []);
       setLoading(false);
-    };
-
-    fetchData();
+    })();
   }, [userId]);
 
+  // Registrar horas: create o update, y actualizar estado local
   const handleRegister = async () => {
     if (!selectedCourse || !date || !hours || !userId) return;
-    const courseId = parseInt(selectedCourse);
+    const courseId = parseInt(selectedCourse, 10);
 
-    // Check if a StudyPlan exists for this course, date and user
-    const { data: existing, error: findError } = await supabase
+    // Busca plan existente sin excepción si no existe
+    const { data: existingPlan, error: fetchError } = await supabase
       .from("StudyPlan")
       .select("*")
       .eq("courseId", courseId)
       .eq("planDate", date)
       .eq("userId", userId)
-      .single();
+      .maybeSingle();
 
-    if (findError && findError.code !== "PGRST116") {
-      // PGRST116 = no rows found (PostgREST error)
-      console.error("Error finding plan:", findError);
+    if (fetchError && fetchError.code !== "PGRST116") {
+      console.error("Error buscando plan:", fetchError);
       return;
     }
 
-    if (existing) {
-      // Update existing record adding hours
-      await supabase
+    let res;
+    if (existingPlan) {
+      // Update
+      res = await supabase
         .from("StudyPlan")
-        .update({ studiedHours: existing.studiedHours + parseInt(hours) })
-        .eq("id", existing.id);
+        .update({ studiedHours: existingPlan.studiedHours + parseInt(hours, 10) })
+        .eq("id", existingPlan.id)
+        .select()
+        .maybeSingle();
     } else {
-      // Insert new record with studied hours, recommendedHours default to 0
-      await supabase.from("StudyPlan").insert({
-        courseId,
-        userId,
-        planDate: date,
-        studiedHours: parseInt(hours),
-        recommendedHours: 0,
-      });
+      // Insert
+      res = await supabase
+        .from("StudyPlan")
+        .insert({
+          courseId,
+          userId,
+          planDate: date,
+          studiedHours: parseInt(hours, 10),
+          recommendedHours: 0,
+        })
+        .select()
+        .maybeSingle();
     }
 
-    // Clear inputs and reload data
-    setSelectedCourse("");
-    setDate("");
+    if (res.error) {
+      console.error("Error guardando plan:", res.error);
+      return;
+    }
+
+    // Actualiza estado local sin recargar
+    setStudyPlans((prev) => {
+      if (existingPlan) {
+        return prev.map((p) => (p.id === existingPlan.id ? res.data! : p));
+      }
+      return [...prev, res.data!];
+    });
+
     setHours("");
-    setLoading(true);
-    const { data: updatedPlans } = await supabase
-      .from("StudyPlan")
-      .select("*")
-      .eq("userId", userId);
-    setStudyPlans(updatedPlans || []);
-    setLoading(false);
   };
 
-  if (!isLoaded) return <p>Cargando usuario...</p>;
+  if (!isLoaded) return <p>Cargando usuario…</p>;
   if (!userId) return <p>Por favor inicia sesión para ver tu planificación.</p>;
-  if (loading) return <p>Cargando planificación...</p>;
+  if (loading) return <p>Cargando planificación…</p>;
+
+  // Genera fechas de la semana
+  const weekDates = [...Array(7)].map((_, i) =>
+    format(addDays(weekStart, i), "yyyy-MM-dd")
+  );
 
   return (
-    <div className="p-6 space-y-8">
-      {/* Register Form */}
-      <Card className="p-4">
-        <CardContent className="flex flex-col sm:flex-row gap-4 items-center">
+    <div className="p-6 space-y-6">
+      {/* Formulario de registro */}
+      <Card className="mx-auto max-w-4xl">
+        <CardContent className="flex flex-col sm:flex-row sm:space-x-4 gap-4 justify-center items-center w-full">
           <select
             className="p-2 border rounded w-full sm:w-1/4"
             value={selectedCourse}
             onChange={(e) => setSelectedCourse(e.target.value)}
           >
             <option value="">Selecciona curso</option>
-            {courses.map((course) => (
-              <option key={course.id} value={course.id}>
-                {course.name} ({course.code})
+            {courses.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name} ({c.code})
               </option>
             ))}
           </select>
@@ -135,7 +139,7 @@ export default function StudyPlanner() {
           />
           <Input
             type="number"
-            placeholder="Horas estudiadas"
+            placeholder="Horas"
             className="w-full sm:w-1/4"
             value={hours}
             onChange={(e) => setHours(e.target.value)}
@@ -144,39 +148,54 @@ export default function StudyPlanner() {
         </CardContent>
       </Card>
 
-      {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-4">
+      {/* Navegación de semanas */}
+      <div className="flex justify-center items-center space-x-4">
+        <Button variant="outline" onClick={() => setWeekStart(ws => addDays(ws, -7))}>
+          &lt; Semana anterior
+        </Button>
+        <span className="font-semibold">
+          {format(weekStart, "dd/MM/yyyy")} – {format(addDays(weekStart, 6), "dd/MM/yyyy")}
+        </span>
+        <Button variant="outline" onClick={() => setWeekStart(ws => addDays(ws, +7))}>
+          Semana siguiente &gt;
+        </Button>
+      </div>
+
+      {/* Calendario */}
+      <div className="grid grid-cols-7 gap-4 max-w-6xl mx-auto">
         {weekDates.map((day) => (
           <div key={day} className="bg-blue-100 p-4 rounded-xl min-h-[150px]">
             <div className="font-bold text-sm mb-3">
-              {format(new Date(day), "EEEE dd/MM")}
+              {format(new Date(day), "EEE dd/MM")}
             </div>
             <div className="space-y-3 text-sm">
               {courses.map((course) => {
-                const match = studyPlans.find(
-                  (p) =>
-                    p.courseId === course.id &&
-                    p.planDate.startsWith(day) &&
-                    p.userId === userId
-                );
-                const studied = match?.studiedHours ?? 0;
-                const recommended = match?.recommendedHours ?? 0;
-
+                const p = studyPlans.find(sp => {
+                  const planKey = sp.planDate.split("T")[0];
+                  return (
+                    sp.courseId === course.id &&
+                    planKey === day &&
+                    sp.userId === userId
+                  );
+                });
+                const studied = p?.studiedHours ?? 0;
+                const recommended = p?.recommendedHours ?? 0;
                 const isMissing = studied < recommended;
 
                 return (
                   <div
                     key={course.id}
                     className={`p-2 rounded shadow ${
-                      isMissing ? "bg-red-100 border border-red-400" : "bg-white"
+                      isMissing
+                        ? "bg-red-100 border border-red-400"
+                        : "bg-white"
                     }`}
                   >
-                    <p className="font-medium">
+                    <p className="font-medium text-blue-600">
                       {course.name} ({course.code})
                     </p>
                     <p>
-                      Estudiado: <strong>{studied}h</strong> / Recomendado:{" "}
-                      <strong>{recommended}h</strong>
+                      Estudiado: <strong>{studied}h</strong> / Recomendado: <strong>{recommended}h</strong>
                     </p>
                     {isMissing && (
                       <p className="text-xs text-red-600 font-semibold">
