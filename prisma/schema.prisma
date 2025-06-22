@@ -1,71 +1,65 @@
-// Schema docs: https://pris.ly/d/prisma-schema
-// Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "generated"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_DATABASE_URL")
 }
 
-
 model Semester {
-  id           Int       @id @default(autoincrement())
+  id           Int      @id @default(autoincrement())
   semesterDate DateTime
   userId       Int
-  courses      Course[]  @relation("SemesterCourses")
+  courses      Course[] @relation("SemesterCourses")
 }
 
 model Course {
-  id          Int         @id @default(autoincrement())
+  id          Int          @id @default(autoincrement())
   code        String
   name        String
   semesterId  Int
-  semester    Semester    @relation("SemesterCourses", fields: [semesterId], references: [id])
-  assignments Assignment[]      @relation("CourseAssignments")
-  studyPlans  StudyPlan[] @relation("CourseStudyPlans")
+  assignments Assignment[] @relation("CourseAssignments")
+  semester    Semester     @relation("SemesterCourses", fields: [semesterId], references: [id])
+  studyPlans  StudyPlan[]  @relation("CourseStudyPlans")
 }
 
 model Assignment {
-  id             Int             @id @default(autoincrement())
-  title          String
-  dueDate        DateTime
-  courseId       Int
-  course         Course          @relation("CourseAssignments", fields: [courseId], references: [id])
-  notifications  Notification[]  @relation("AssignmentNotifications")
+  id            Int            @id @default(autoincrement())
+  title         String
+  dueDate       DateTime
+  courseId      Int
+  course        Course         @relation("CourseAssignments", fields: [courseId], references: [id])
+  notifications Notification[] @relation("AssignmentNotifications")
 }
 
 model StudyPlan {
-  id                 Int              @id @default(autoincrement())
-  studiedHours       Int
-  recommendedHours   Int
-  planDate           DateTime
-  userId             String
-  courseId           Int
-  course             Course           @relation("CourseStudyPlans", fields: [courseId], references: [id])
-  notifications      Notification[]   @relation("StudyPlanNotifications")
+  id               Int            @id @default(autoincrement())
+  studiedHours     Int
+  recommendedHours Int
+  planDate         DateTime
+  userId           String
+  courseId         Int
+  notifications    Notification[] @relation("StudyPlanNotifications")
+  course           Course         @relation("CourseStudyPlans", fields: [courseId], references: [id])
 }
 
+model Notification {
+  id           Int              @id @default(autoincrement())
+  type         NotificationType
+  title        String
+  message      String
+  isRead       Boolean          @default(false)
+  userId       String
+  assignmentId Int?
+  studyPlanId  Int?
+  assignment   Assignment?      @relation("AssignmentNotifications", fields: [assignmentId], references: [id])
+  studyPlan    StudyPlan?       @relation("StudyPlanNotifications", fields: [studyPlanId], references: [id])
+}
 
 enum NotificationType {
   STUDY_PLAN
   ASSIGNMENT
-}
-
-model Notification {
-  id             Int              @id @default(autoincrement())
-  type           NotificationType
-  title          String
-  message        String
-  isRead         Boolean          @default(false)
-
-  userId         String
-  assignmentId   Int?
-  assignment     Assignment?      @relation("AssignmentNotifications", fields: [assignmentId], references: [id])
-  studyPlanId    Int?
-  studyPlan      StudyPlan? @relation("StudyPlanNotifications", fields: [studyPlanId], references: [id])
 }

@@ -29,6 +29,7 @@ export default function Navbar() {
           </Link>
           <Link href="/canvasInfo">Canvas</Link>
           <Link href="/tracker">Planificador</Link>
+          <Link href="/monitoreo">Monitoreo Rendimiento</Link>
           <SignedOut>
             <SignInButton mode="modal" />
             <SignUpButton mode="modal" />
