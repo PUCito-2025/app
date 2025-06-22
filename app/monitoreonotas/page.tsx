@@ -1,134 +1,173 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
+import { createClient } from "@supabase/supabase-js";
+import { useUser } from "@clerk/nextjs";
+import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar } from "recharts";
+import { format, addDays } from "date-fns";
 import CardCourse from "@/components/CardCourse";
-import "react-calendar/dist/Calendar.css"; // remove calendar if not used
 
-// Types
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
-type Course = {
-  id: number;
-  name: string;
-  course_code: string;
-  workflow_state: string;
-};
+// Combined Monitoreo and CanvasInfoPage
+export default function Dashboard() {
+  const { user, isLoaded } = useUser();
+  const userId = user?.id;
 
-type Grade = {
-  id: number;
-  score: number;
-  max_score: number;
-  due_at: string;
-  context_name: string;
-};
+  // Monitoring state
+  const [courses, setCourses] = useState<any[]>([]);
+  const [studyPlans, setStudyPlans] = useState<any[]>([]);
+  const [monitorLoading, setMonitorLoading] = useState(true);
 
-export default function CanvasInfoPage() {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [grades, setGrades] = useState<Grade[]>([]);
-  const [loadingCourses, setLoadingCourses] = useState(true);
-  const [loadingGrades, setLoadingGrades] = useState(true);
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  // Grades fetched from Canvas API per course
+  const [grades, setGrades] = useState<any[]>([]);
+  const [gradesLoading, setGradesLoading] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<any | null>(null);
 
+  // Week start for monitoring
+  const [weekStart, setWeekStart] = useState(new Date());
   useEffect(() => {
-    // Fetch courses
-    (async () => {
-      try {
-        const res = await fetch("/api/canvas");
-        const data: Course[] = await res.json();
-        const unique = Array.from(new Map(data.map(c => [c.id, c])).values());
-        setCourses(unique);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoadingCourses(false);
-      }
-    })();
-
-    // Fetch grades
-    (async () => {
-      try {
-        const res = await fetch("/api/calificaciones");
-        const data: Grade[] = await res.json();
-        setGrades(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoadingGrades(false);
-      }
-    })();
+    const d = new Date();
+    const diff = d.getDay() === 0 ? -6 : 1 - d.getDay();
+    setWeekStart(addDays(d, diff));
   }, []);
 
-  const gradesByCourse = selectedCourse
-    ? grades.filter(g => g.context_name === selectedCourse.name)
-    : [];
+  // Fetch monitoring data
+  useEffect(() => {
+    if (!userId) return;
+    (async () => {
+      const [{ data: cData, error: cError }, { data: pData, error: pError }] = await Promise.all([
+        supabase.from("Course").select("id, name, code"),
+        supabase
+          .from("StudyPlan")
+          .select("courseId, studiedHours, planDate")
+          .eq("userId", userId)
+          .gte("planDate", format(weekStart, "yyyy-MM-dd"))
+          .lte("planDate", format(addDays(weekStart, 6), "yyyy-MM-dd")),
+      ]);
+      if (!cError && !pError) {
+        setCourses(cData || []);
+        setStudyPlans(pData || []);
+      }
+      setMonitorLoading(false);
+    })();
+  }, [userId, weekStart]);
 
-  // Calculate total score and max for selected course
-  const totalScore = gradesByCourse.reduce((sum, g) => sum + g.score, 0);
-  const totalMax = gradesByCourse.reduce((sum, g) => sum + g.max_score, 0);
+  // Fetch grades from Canvas API when a course is selected
+  useEffect(() => {
+    if (!selectedCourse) return;
+    setGradesLoading(true);
+    (async () => {
+      try {
+        const token = process.env.NEXT_PUBLIC_CANVAS_TOKEN;
+        const baseUrl = process.env.NEXT_PUBLIC_CANVAS_URL;
+        const courseId = selectedCourse.id;
+        const url = `${baseUrl}/api/v1/courses/${courseId}/students/submissions?per_page=100`;
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          console.error(`Canvas API error (${res.status}):`, text);
+          setGrades([]);
+        } else {
+          let json: any;
+          try {
+            json = await res.json();
+          } catch (err) {
+            const text = await res.text();
+            console.error('Invalid JSON from Canvas API:', text);
+            json = [];
+          }
+          const gradesData = Array.isArray(json)
+            ? json.map((s: any) => ({
+                id: s.id,
+                score: s.score ?? 0,
+                max_score: s.max_score ?? s['max_score'] ?? 0,
+                due_at: s.submitted_at || s.workflow_state || '',
+                context_name: selectedCourse.name,
+              }))
+            : [];
+          setGrades(gradesData);
+        }
+      } catch (error) {
+        console.error('Fetch Canvas API failed:', error);
+        setGrades([]);
+      } finally {
+        setGradesLoading(false);
+      }
+    })();
+  }, [selectedCourse]);
+
+  if (!isLoaded) return <p>Cargando usuario…</p>;
+  if (!userId) return <p>Por favor inicia sesión para ver tu dashboard.</p>;
+
+  // Prepare monitoring chart data
+  const monitorData = courses.map(course => {
+    const total = studyPlans
+      .filter(p => p.courseId === course.id)
+      .reduce((sum, p) => sum + p.studiedHours, 0);
+    return { name: `${course.name} (${course.code})`, hours: total };
+  });
+
+  // Grades stats
+  const totalScore = grades.reduce((sum, g) => sum + g.score, 0);
+  const totalMax = grades.reduce((sum, g) => sum + g.max_score, 0);
 
   return (
-    <div className="p-6">
-      <h1 className="mb-4 text-3xl font-bold">Tus cursos y Calificaciones en Canvas</h1>
-      <h2 className="mb-4 text-3xl font-bold">Presiona algún curso para conocer tu calificación</h2>
-
-      {loadingCourses ? (
-        <p>Cargando cursos...</p>
-      ) : (
+    <div className="p-6 space-y-8">
+    
+      {/* Grades Section */}
+      <div>
+        <h2 className="text-2xl font-bold">Calificaciones</h2>
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {courses.map(course => (
             <li key={course.id}>
               <button
-                type="button"
-                onClick={() => setSelectedCourse(course)}
                 className="w-full text-left"
+                onClick={() => setSelectedCourse(course)}
               >
                 <CardCourse
                   id={course.id}
                   name={course.name}
-                  courseCode={course.course_code}
-                  workFlowState={course.workflow_state}
+                  courseCode={course.code}
+                  workFlowState=""
                   selected={selectedCourse?.id === course.id}
                 />
               </button>
             </li>
           ))}
         </ul>
-      )}
-
-      {selectedCourse && (
-        <div className="mt-10">
-          <h2 className="mb-2 text-xl font-semibold">
-            Calificaciones de <span className="text-blue-600">{selectedCourse.name}</span>
-          </h2>
-
-          {loadingGrades ? (
-            <p>Cargando calificaciones...</p>
-          ) : gradesByCourse.length === 0 ? (
-            <p className="text-gray-500">No hay calificaciones para este curso.</p>
-          ) : (
-            <div className="space-y-4">
-              <p className="font-medium">
-                Total: <strong>{totalScore}</strong> / <strong>{totalMax}</strong>
-              </p>
-              <ul className="space-y-2">
-                {gradesByCourse.map(g => (
-                  <li
-                    key={`grade-${g.id}`}
-                    className="rounded border bg-white p-4 shadow-sm"
-                  >
-                    <p>
-                      <span className="font-semibold">{g.score}</span> / {g.max_score}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      Entrega: {new Date(g.due_at).toLocaleString("es-CL")}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
+        {selectedCourse && (
+          <div className="mt-6 space-y-4">
+            {gradesLoading ? (
+              <p>Cargando calificaciones…</p>
+            ) : grades.length === 0 ? (
+              <p>No hay calificaciones para este curso.</p>
+            ) : (
+              <div>
+                <p className="font-medium">
+                  Total: <strong>{totalScore}</strong> / <strong>{totalMax}</strong>
+                </p>
+                <ul className="space-y-2">
+                  {grades.map(g => (
+                    <li key={g.id} className="p-4 bg-white rounded shadow">
+                      <p className="font-semibold">{g.score} / {g.max_score}</p>
+                      <p className="text-sm text-gray-500">
+                        Entrega: {new Date(g.due_at).toLocaleString('es-CL')}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
