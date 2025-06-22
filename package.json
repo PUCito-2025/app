@@ -64,7 +64,7 @@
     "jiti": "^2.4.2",
     "jsdom": "^26.1.0",
     "knip": "^5.53.0",
-    "lint-staged": "^15.5.1",
+    "lint-staged": "^16.1.2",
     "prettier-plugin-tailwindcss": "^0.6.11",
     "prisma": "^6.10.1",
     "tailwindcss": "^4",
