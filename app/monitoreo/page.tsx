@@ -1,3 +1,6 @@
+// To use this page, first install Recharts:
+// npm install recharts
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -53,7 +56,7 @@ export default function Monitoreo() {
   }, [userId, weekStart]);
 
   if (!isLoaded) return <p>Cargando usuario…</p>;
-  if (!userId) return <p>Por favor inicia sesión para ver tu planificación.</p>;
+  if (!userId) return <p>Por favor inicia sesión para ver tu rendimiento.</p>;
   if (loading) return <p>Cargando datos…</p>;
 
   // Aggregate total hours studied per course this week
@@ -66,7 +69,8 @@ export default function Monitoreo() {
 
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">Monitoreo Semanal</h2>
+      <h2 className="text-2xl font-bold mb-2">Monitoreo Semanal</h2>
+      <p className="text-sm text-gray-600 mb-4">Del {format(weekStart, "dd/MM/yyyy")} al {format(addDays(weekStart, 6), "dd/MM/yyyy")}</p>
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
