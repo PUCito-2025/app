@@ -1,85 +1,89 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const CANVAS_API_URL = "https://cursos.canvas.uc.cl/api/v1";
 
+const CANVAS_API_URL = 'https://cursos.canvas.uc.cl/api/v1';
+const token = process.env.CANVAS_TOKEN;
 export async function GET(req: NextRequest) {
-  const token = req.headers.get("authorization")?.replace("Bearer ", "");
+    if (!token) {
+        return NextResponse.json({ error: 'Missing Authorization token' }, { status: 401 });
+    }
+    console.log("Canvas Token:", token); // Debugging line to check if token is available
+    // 1. Obtener cursos
+    const coursesRes = await fetch(`${CANVAS_API_URL}/courses`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
 
-  if (!token) {
-    return NextResponse.json({ error: "Missing Authorization token" }, { status: 401 });
-  }
+    if (!coursesRes.ok) {
+        return NextResponse.json({ error: 'Failed to fetch courses' }, { status: coursesRes.status });
+    }
 
-  // 1. Obtener cursos
-  const coursesRes = await fetch(`${CANVAS_API_URL}/courses`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+    const courses = await coursesRes.json();
 
-  if (!coursesRes.ok) {
-    return NextResponse.json({ error: "Failed to fetch courses" }, { status: coursesRes.status });
-  }
+    // 2. Filtrar cursos activos del semestre actual
+    const contextCodes = courses
+        .filter((course: any) =>
+            course.workflow_state === 'available' &&
+            course.enrollments?.some((e: any) => e.enrollment_state === 'active' && e.type === 'student')
+        )
+        .map((course: any) => `course_${course.id}`);
 
-  const courses = await coursesRes.json();
+    if (contextCodes.length === 0) {
+        return NextResponse.json([], { status: 200 });
+    }
 
-  // 2. Filtrar cursos activos del semestre actual
-  const contextCodes = courses
-    .filter(
-      (course: any) =>
-        course.workflow_state === "available" &&
-        course.enrollments?.some((e: any) => e.enrollment_state === "active" && e.type === "student"),
-    )
-    .map((course: any) => `course_${course.id}`);
+    // 3. Calcular fechas dinámicamente
+    const now = new Date();
+    const startDate = now.toISOString().split('T')[0]; // YYYY-MM-DD
 
-  if (contextCodes.length === 0) {
-    return NextResponse.json([], { status: 200 });
-  }
+    const endDateObj = new Date();
+    endDateObj.setMonth(endDateObj.getMonth() + 3);
+    const endDate = endDateObj.toISOString().split('T')[0];
 
-  // 3. Calcular fechas dinámicamente
-  const now = new Date();
-  const startDate = now.toISOString().split("T")[0]; // YYYY-MM-DD
+    // 4. Preparar parámetros de la solicitud
+    const params = new URLSearchParams({
+        start_date: startDate,
+        end_date: endDate,
+        type: 'assignment',
+        per_page: '50',
+    });
 
-  const endDateObj = new Date();
-  endDateObj.setMonth(endDateObj.getMonth() + 3);
-  const endDate = endDateObj.toISOString().split("T")[0];
+    contextCodes.forEach((code: string) => params.append('context_codes[]', code));
 
-  // 4. Preparar parámetros de la solicitud
-  const params = new URLSearchParams({
-    "start_date": startDate,
-    "end_date": endDate,
-    type: "assignment",
-    "per_page": "50",
-  });
+    const eventsUrl = `${CANVAS_API_URL}/calendar_events?${params.toString()}`;
 
-  contextCodes.forEach((code: string) => params.append("context_codes[]", code));
+    const eventsRes = await fetch(eventsUrl, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
 
-  const eventsUrl = `${CANVAS_API_URL}/calendar_events?${params.toString()}`;
+    if (!eventsRes.ok) {
+        return NextResponse.json({ error: 'Failed to fetch events' }, { status: eventsRes.status });
+    }
 
-  const eventsRes = await fetch(eventsUrl, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+    const events = await eventsRes.json();
 
-  if (!eventsRes.ok) {
-    return NextResponse.json({ error: "Failed to fetch events" }, { status: eventsRes.status });
-  }
+    // 5. Filtrar assignments activos (lock_at en el futuro o indefinido)
+    const activeAssignments = events.filter((event: any) => {
+        if (event.type !== 'assignment') return false;
 
-  const events = await eventsRes.json();
+        const lockAt = event.assignment?.lock_at
+            ? new Date(event.assignment.lock_at)
+            : null;
 
-  // 5. Filtrar assignments activos (lock_at en el futuro o indefinido)
-  const activeAssignments = events.filter((event: any) => {
-    if (event.type !== "assignment") return false;
+        return !lockAt || lockAt > now;
+    });
 
-    const lockAt = event.assignment?.lock_at ? new Date(event.assignment.lock_at) : null;
+    const formatted = activeAssignments.map((event: any) => {
+        const start = event.assignment?.due_at || event.start_at;
 
-    return !lockAt || lockAt > now;
-  });
+        return {
+            id: event.id,
+            title: event.title,
+            start: start,
+            allDay: true, // Mark the event as an all-day event
+            description: event.assignment?.description || event.description || '',
+            url: event.html_url,
+        };
+    });
 
-  const formatted = activeAssignments.map((event: any) => ({
-    id: event.id,
-    title: event.title,
-    start: event.assignment?.due_at || event.start_at,
-    end: event.assignment?.lock_at || event.end_at,
-    description: event.assignment?.description || event.description || "",
-    url: event.html_url,
-  }));
-
-  return NextResponse.json(formatted);
+    return NextResponse.json(formatted);
 }
