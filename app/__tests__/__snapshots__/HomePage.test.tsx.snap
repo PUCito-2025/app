@@ -3,45 +3,282 @@
 exports[`HomePage matches snapshot 1`] = `
 <div>
   <div
-    class="flex min-h-screen flex-col bg-blue-50"
+    class="space-y-16"
   >
-    <div
-      class="flex flex-grow items-center justify-center px-4 py-0 text-center"
+    <section
+      class="bg-blue-50 px-6 py-16 text-center"
     >
-      <div>
-        <h1
-          class="text-2xl font-bold text-blue-900 md:text-4xl"
+      <h1
+        class="mb-4 text-3xl font-bold md:text-5xl"
+      >
+        Find the best used car deals in Chile —
+        <br />
+        all in one place!
+      </h1>
+      <p
+        class="mb-6 text-gray-600"
+      >
+        Compare prices across Chileautos, Yapo, and Facebook Marketplace instantly
+      </p>
+      <div
+        class="flex flex-wrap justify-center gap-4"
+      >
+        <button
+          class="rounded-md border bg-white px-4 py-2 shadow-sm"
+          type="button"
         >
-          PUCito: La nueva forma de organizar tu estudio
-        </h1>
-        <p
-          class="mx-auto mt-2 max-w-xl text-sm text-gray-700 md:text-base"
+          Price Range
+        </button>
+        <button
+          class="rounded-md border bg-white px-4 py-2 shadow-sm"
+          type="button"
         >
-          Conecta tu Canvas, registra tus horas de estudio y sigue tu progreso académico como nunca antes.
-        </p>
+          Location
+        </button>
+        <button
+          class="rounded-md border bg-white px-4 py-2 shadow-sm"
+          type="button"
+        >
+          Brand
+        </button>
+        <button
+          class="rounded-md border bg-white px-4 py-2 shadow-sm"
+          type="button"
+        >
+          Vehicle Type
+        </button>
+      </div>
+    </section>
+    <section
+      class="px-6"
+    >
+      <h2
+        class="mb-6 text-2xl font-semibold"
+      >
+        Featured Cars
+      </h2>
+      <div
+        class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4"
+      >
         <div
-          class="mt-4 flex flex-col justify-center gap-4 sm:flex-row"
+          class="rounded-lg border bg-white p-4 shadow-sm"
         >
-          <a
-            class="rounded-xl bg-blue-600 px-6 py-3 text-white shadow-md hover:bg-blue-700"
-            href="/canvasInfo"
+          <div
+            class="mb-4 h-32 rounded-md bg-gray-200"
+          />
+          <h3
+            class="mb-1 font-semibold"
           >
-            Ver mis Cursos
-          </a>
-          <a
-            class="rounded-xl border border-blue-600 px-6 py-3 text-blue-600 hover:bg-blue-100"
-            href="/tracker"
+            Toyota Corolla 2024
+          </h3>
+          <p
+            class="mb-2 text-sm text-gray-600"
           >
-            Ir al Planificador
-          </a>
+            $18,990
+             • 
+            Chileautos
+          </p>
+          <p
+            class="text-sm text-gray-500"
+          >
+            15,000 km
+             • 
+            Gasoline
+          </p>
+          <button
+            class="mt-4 w-full rounded-md bg-blue-600 py-2 text-sm text-white hover:bg-blue-700"
+            type="button"
+          >
+            View Details
+          </button>
+        </div>
+        <div
+          class="rounded-lg border bg-white p-4 shadow-sm"
+        >
+          <div
+            class="mb-4 h-32 rounded-md bg-gray-200"
+          />
+          <h3
+            class="mb-1 font-semibold"
+          >
+            Honda Civic 2023
+          </h3>
+          <p
+            class="mb-2 text-sm text-gray-600"
+          >
+            $21,500
+             • 
+            Yapo
+          </p>
+          <p
+            class="text-sm text-gray-500"
+          >
+            8,000 km
+             • 
+            Gasoline
+          </p>
+          <button
+            class="mt-4 w-full rounded-md bg-blue-600 py-2 text-sm text-white hover:bg-blue-700"
+            type="button"
+          >
+            View Details
+          </button>
+        </div>
+        <div
+          class="rounded-lg border bg-white p-4 shadow-sm"
+        >
+          <div
+            class="mb-4 h-32 rounded-md bg-gray-200"
+          />
+          <h3
+            class="mb-1 font-semibold"
+          >
+            Hyundai Tucson 2024
+          </h3>
+          <p
+            class="mb-2 text-sm text-gray-600"
+          >
+            $25,990
+             • 
+            Facebook
+          </p>
+          <p
+            class="text-sm text-gray-500"
+          >
+            12,000 km
+             • 
+            Hybrid
+          </p>
+          <button
+            class="mt-4 w-full rounded-md bg-blue-600 py-2 text-sm text-white hover:bg-blue-700"
+            type="button"
+          >
+            View Details
+          </button>
+        </div>
+        <div
+          class="rounded-lg border bg-white p-4 shadow-sm"
+        >
+          <div
+            class="mb-4 h-32 rounded-md bg-gray-200"
+          />
+          <h3
+            class="mb-1 font-semibold"
+          >
+            Mazda 3 2024
+          </h3>
+          <p
+            class="mb-2 text-sm text-gray-600"
+          >
+            $23,500
+             • 
+            Chileautos
+          </p>
+          <p
+            class="text-sm text-gray-500"
+          >
+            5,000 km
+             • 
+            Gasoline
+          </p>
+          <button
+            class="mt-4 w-full rounded-md bg-blue-600 py-2 text-sm text-white hover:bg-blue-700"
+            type="button"
+          >
+            View Details
+          </button>
         </div>
       </div>
-    </div>
+    </section>
+    <section
+      class="bg-gray-50 px-6 py-12 text-center"
+    >
+      <h2
+        class="mb-2 text-2xl font-semibold"
+      >
+        Market Trends
+      </h2>
+      <p
+        class="mb-6 text-sm text-gray-600"
+      >
+        Stay informed with real-time market analytics and price trends
+      </p>
+      <div
+        class="mx-auto grid max-w-5xl grid-cols-1 gap-6 text-left md:grid-cols-3"
+      >
+        <div
+          class="rounded-md border bg-white p-4"
+        >
+          <h4
+            class="mb-2 font-semibold"
+          >
+            Popular Brands
+          </h4>
+          <ul
+            class="space-y-1 text-sm text-gray-700"
+          >
+            <li>
+              Toyota - 32%
+            </li>
+            <li>
+              Hyundai - 26%
+            </li>
+            <li>
+              Kia - 24%
+            </li>
+          </ul>
+        </div>
+        <div
+          class="rounded-md border bg-white p-4"
+        >
+          <h4
+            class="mb-2 font-semibold"
+          >
+            Price Trends
+          </h4>
+          <ul
+            class="space-y-1 text-sm text-gray-700"
+          >
+            <li>
+              SUVs: +5.2%
+            </li>
+            <li>
+              Sedans: -2.1%
+            </li>
+            <li>
+              Electric: +7.7%
+            </li>
+          </ul>
+        </div>
+        <div
+          class="rounded-md border bg-white p-4"
+        >
+          <h4
+            class="mb-2 font-semibold"
+          >
+            Market Activity
+          </h4>
+          <ul
+            class="space-y-1 text-sm text-gray-700"
+          >
+            <li>
+              New Listings: 234
+            </li>
+            <li>
+              Avg. Days Listed: 45
+            </li>
+            <li>
+              Total Active: 12,458
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
     <footer
-      class="bg-blue-950 px-6 py-6 text-white"
+      class="bg-blue-950 px-6 py-12 text-white"
     >
       <div
-        class="mx-auto grid max-w-7xl grid-cols-1 gap-8 text-xs md:grid-cols-4"
+        class="mx-auto grid max-w-7xl grid-cols-1 gap-8 text-sm md:grid-cols-4"
       >
         <div>
           <h3
@@ -50,7 +287,7 @@ exports[`HomePage matches snapshot 1`] = `
             PUCito
           </h3>
           <p>
-            Your trusted platform for studying across Canvas.
+            Your trusted platform for comparing used cars across Chile.
           </p>
           <div
             class="mt-3 flex gap-3"
@@ -65,6 +302,26 @@ exports[`HomePage matches snapshot 1`] = `
               class="h-5 w-5 rounded-full bg-white"
             />
           </div>
+        </div>
+        <div>
+          <h4
+            class="mb-2 font-semibold"
+          >
+            Quick Links
+          </h4>
+          <ul
+            class="space-y-1"
+          >
+            <li>
+              Home
+            </li>
+            <li>
+              Browse Cars
+            </li>
+            <li>
+              Market Trends
+            </li>
+          </ul>
         </div>
         <div>
           <h4
@@ -111,7 +368,7 @@ exports[`HomePage matches snapshot 1`] = `
         </div>
       </div>
       <div
-        class="mt-4 text-center text-xs opacity-70"
+        class="mt-10 text-center text-xs opacity-70"
       >
         © 2025 PUCito. All rights reserved.
       </div>
@@ -119,3 +376,5 @@ exports[`HomePage matches snapshot 1`] = `
   </div>
 </div>
 `;
+
+     

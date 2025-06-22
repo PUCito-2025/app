@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
+
 
 const CANVAS_API_URL = 'https://cursos.canvas.uc.cl/api/v1';
 const token = process.env.CANVAS_TOKEN;
