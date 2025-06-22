@@ -5,7 +5,6 @@ import FullCalendar from '@fullcalendar/react';
 import { createEvents, EventAttributes } from 'ics';
 import { useEffect, useState } from "react";
 
-// Define a more specific event type that includes the description from your API
 interface CalendarEvent extends EventInput {
     description?: string;
 }
@@ -15,7 +14,6 @@ const Calendar: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Fetching logic remains the same
     useEffect(() => {
         fetch("/api/calendar-events")
             .then(res => res.json())
@@ -39,7 +37,6 @@ const Calendar: React.FC = () => {
             return;
         }
 
-        // The ics library expects event dates in a specific array format [YYYY, M, D, H, M]
         const icsEvents: EventAttributes[] = events.map(event => {
             const start = new Date(event.start as string);
             const end = event.end ? new Date(event.end as string) : start;
@@ -48,7 +45,7 @@ const Calendar: React.FC = () => {
                 title: event.title,
                 start: [start.getFullYear(), start.getMonth() + 1, start.getDate(), start.getHours(), start.getMinutes()],
                 end: [end.getFullYear(), end.getMonth() + 1, end.getDate(), end.getHours(), end.getMinutes()],
-                description: event.description || '', // This is now type-safe
+                description: event.description || '',
             };
         });
 
