@@ -1,20 +1,10 @@
 "use client";
-
 import { useEffect, useState } from "react";
-import Calendar from "react-calendar";
-
 import CardCourse from "@/components/CardCourse";
 import EventDot from "@/components/EventDot";
 import "react-calendar/dist/Calendar.css";
 
 import GeminiModal from "@/components/GeminiModal";
-
-type Course = {
-  id: number;
-  name: string;
-  course_code: string;
-  workflow_state: string;
-};
 
 type Evento = {
   id: number;
@@ -23,22 +13,17 @@ type Evento = {
   context_name: string;
 };
 
-function renderTileContent(events: Evento[]) {
-  return ({ date, view }: { date: Date; view: string }) =>
-    view === "month" ? <EventDot date={date} events={events} /> : null;
-}
+type Course = { id: number; name: string; course_code: string; workflow_state: string };
+type Assignment = { id: number; name: string; due_at: string | null; course_id: number };
 
 export default function CanvasInfoPage() {
   const [courses, setCourses] = useState<Course[]>([]);
-  const [events, setEvents] = useState<Evento[]>([]);
-  const [loadingCourses, setLoadingCourses] = useState(true);
-  const [loadingEvents, setLoadingEvents] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [pastAssignments, setPastAssignments] = useState<Assignment[] | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [loadingGemini, setLoadingGemini] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [geminiResponse, setGeminiResponse] = useState("");
-
   const simulateStream = async (text: string) => {
     setGeminiResponse("");
     setModalOpen(true);
@@ -74,81 +59,125 @@ export default function CanvasInfoPage() {
     }
   };
 
+  const [loadingCourses, setLoadingCourses] = useState(true);
+  const [loadingAssignments, setLoadingAssignments] = useState(false);
+  const [assignmentError, setAssignmentError] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [filter, setFilter] = useState<"all" | "upcoming" | "past">("upcoming");
 
   useEffect(() => {
-    const fetchCourses = async () => {
+    (async () => {
       try {
         const res = await fetch("/api/canvas");
         const data = await res.json();
-        const uniqueCourses = Array.from(new Map(data.map((c: Course) => [c.id, c])).values()) as Course[];
-        setCourses(uniqueCourses);
-      } catch (err) {
-        // console.error('Error al obtener cursos:', err);
+        const unique = Array.from(new Map(data.map((c: Course) => [c.id, c])).values());
+        setCourses(unique);
+      } catch (e) {
+        console.error(e);
       } finally {
         setLoadingCourses(false);
       }
-    };
-
-    const fetchEvents = async () => {
-      try {
-        const res = await fetch("/api/evaluaciones");
-        const data = await res.json();
-        const uniqueEvents = Array.from(new Map(data.map((e: Evento) => [`${e.id}-${e.start_at}`, e])).values());
-        setEvents(uniqueEvents as Evento[]);
-      } catch (err) {
-        // console.error('Error al obtener evaluaciones:', err);
-      } finally {
-        setLoadingEvents(false);
-      }
-    };
-
-    fetchCourses();
-    fetchEvents();
+    })();
   }, []);
 
-  const eventosDelDia = selectedDate
-    ? events.filter((ev) => new Date(ev.start_at).toDateString() === selectedDate.toDateString())
-    : [];
+  const fetchAssignments = async (courseId: number, includePast = false) => {
+    setLoadingAssignments(true);
+    setAssignmentError(null);
+    try {
+      const res = await fetch(`/api/evaluaciones?courseId=${courseId}&includePast=${includePast}`);
+      const data = await res.json();
 
-  const eventosDelCurso = selectedCourse ? events.filter((ev) => ev.context_name === selectedCourse.name) : [];
+      if (res.status === 403) {
+        setAssignmentError("No tienes acceso a las tareas de este curso");
+        setAssignments([]);
+        setUserRole(null);
+      } else if (data.error) {
+        setAssignmentError(data.error);
+        setAssignments([]);
+        setUserRole(null);
+      } else {
+        setAssignments(data.tasks);
+        setPastAssignments(data.allTasks || null);
+        setUserRole(data.role || null);
+      }
+    } catch (e) {
+      setAssignmentError("Error al obtener tareas");
+      setAssignments([]);
+      setUserRole(null);
+    } finally {
+      setLoadingAssignments(false);
+    }
+  };
 
   return (
-    <div className="p-6">
-      <h1 className="mb-4 text-3xl font-bold">Tus cursos en Canvas</h1>
+    <div className="p-6 max-w-7xl mx-auto">
+      <h1 className="text-4xl font-bold mb-6 text-gray-800">Tus cursos en Canvas</h1>
 
-      {loadingCourses ? (
-        <p>Cargando cursos...</p>
-      ) : (
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {courses.map((course) => (
-            <li key={`course-${course.id}`}>
-              <button type="button" onClick={() => setSelectedCourse(course)} className="w-full text-left">
-                <CardCourse
-                  id={course.id}
-                  name={course.name}
-                  courseCode={course.course_code}
-                  workFlowState={course.workflow_state}
-                  selected={selectedCourse?.id === course.id}
-                />
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        {courses.map((c) => (
+          <li key={c.id}>
+            <button
+              onClick={() => {
+                setSelectedCourse(c);
+                fetchAssignments(c.id, filter === "all");
+              }}
+              className="w-full text-left"
+            >
+              <CardCourse {...c} selected={selectedCourse?.id === c.id} />
+            </button>
+          </li>
+        ))}
+      </ul>
 
       {selectedCourse && (
         <div className="mt-10">
-          <h2 className="mb-2 text-xl font-semibold">
-            Evaluaciones próximas de <span className="text-blue-600">{selectedCourse.name}</span>
-          </h2>
-          {eventosDelCurso.length === 0 ? (
-            <p className="text-gray-500">No hay evaluaciones para este curso.</p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-700">
+                Tareas de <span className="text-blue-600">{selectedCourse.name}</span>
+              </h2>
+              {userRole && (
+                <p className="text-sm text-gray-500 mt-1">Tu rol en el curso: <span className="font-medium">{userRole}</span></p>
+              )}
+            </div>
+            <div className="flex space-x-2">
+              {["all", "upcoming", "past"].map((f) => (
+                <button
+                  key={f}
+                  onClick={() => {
+                    setFilter(f as any);
+                    if (selectedCourse) fetchAssignments(selectedCourse.id, f === "all");
+                  }}
+                  className={`px-3 py-1 rounded text-sm ${
+                    filter === f ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-800"
+                  }`}
+                >
+                  {f === "all" ? "Todas" : f === "upcoming" ? "Próximas" : "Pasadas"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {loadingAssignments ? (
+            <p className="text-gray-500">Cargando tareas...</p>
+          ) : assignmentError ? (
+            <p className="text-red-500">{assignmentError}</p>
+          ) : assignments.length === 0 ? (
+            <p className="text-gray-500">No hay tareas según el filtro seleccionado.</p>
           ) : (
-            <ul className="space-y-2">
-              {eventosDelCurso.map((ev) => (
-                <li key={`curso-event-${ev.id}`} className="rounded border bg-white p-3 shadow-sm">
-                  <p className="font-semibold">{ev.title}</p>
-                  <p className="text-sm text-gray-500">Fecha: {new Date(ev.start_at).toLocaleString("es-CL")}</p>
+            <ul className="space-y-4">
+              {assignments.map((a) => (
+                <li
+                  key={`${a.id}-${a.due_at}`}
+                  className="rounded border bg-white p-4 shadow hover:shadow-md transition"
+                >
+                  <p className="text-lg font-semibold text-gray-800">{a.name}</p>
+                  <p className="text-sm text-gray-500">
+                    Fecha de entrega:{" "}
+                    {a.due_at
+                      ? new Date(a.due_at).toLocaleString("es-CL")
+                      : "Sin fecha"}
+                  </p>
                 </li>
               ))}
             </ul>
