@@ -1,14 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useUser } from "@clerk/nextjs";
-import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
 const hardcodedClasses = [
   {
     name: "Matemática",
@@ -52,14 +50,6 @@ const StudyTracker = () => {
     setHoursInput(newInputs);
   };
 
-  async function getStudyPlansByUserId(user_id: string | undefined) {
-  const studyplans = await prisma.StudyPlan.findMany({
-    where: {
-      userId: user_id, // assuming `id` is the column storing the user ID
-    },
-  });
-  return studyplans;
-}
 
   return (
     <div className="space-y-8 p-6">
@@ -93,7 +83,6 @@ const StudyTracker = () => {
           </Card>
         ))}
       </div>
-
       <div className="mt-10">
         <h2 className="mb-4 text-2xl font-bold">Calendario de estudio</h2>
         <div className="grid grid-cols-7 gap-2 text-center">
