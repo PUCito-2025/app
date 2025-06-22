@@ -58,7 +58,7 @@ export default function CanvasInfoPage() {
       setLoadingGemini(false);
     }
   };
-
+  const [loadingEvents, setLoadingEvents ] = useState(true);
   const [loadingCourses, setLoadingCourses] = useState(true);
   const [loadingAssignments, setLoadingAssignments] = useState(false);
   const [assignmentError, setAssignmentError] = useState<string | null>(null);
