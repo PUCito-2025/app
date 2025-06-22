@@ -1,6 +1,17 @@
 "use client";
 import { useEffect, useState } from "react";
 import CardCourse from "@/components/CardCourse";
+import EventDot from "@/components/EventDot";
+import "react-calendar/dist/Calendar.css";
+
+import GeminiModal from "@/components/GeminiModal";
+
+type Evento = {
+  id: number;
+  title: string;
+  start_at: string;
+  context_name: string;
+};
 
 type Course = { id: number; name: string; course_code: string; workflow_state: string };
 type Assignment = { id: number; name: string; due_at: string | null; course_id: number };
@@ -10,6 +21,44 @@ export default function CanvasInfoPage() {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [pastAssignments, setPastAssignments] = useState<Assignment[] | null>(null);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [loadingGemini, setLoadingGemini] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [geminiResponse, setGeminiResponse] = useState("");
+  const simulateStream = async (text: string) => {
+    setGeminiResponse("");
+    setModalOpen(true);
+    for (let i = 0; i < text.length; i++) {
+      await new Promise((r) => setTimeout(r, 15));
+      setGeminiResponse((prev) => prev + text[i]);
+    }
+  };
+
+  const handleGeminiClick = async () => {
+    if (!selectedCourse) return;
+    setLoadingGemini(true);
+
+    try {
+      const prompt = `Responde en no mas de 200 palabras:
+        Quiero una recomendación personalizada para el curso "${selectedCourse.name}"
+        (Código: ${selectedCourse.course_code}), cuyo estado es "${selectedCourse.workflow_state}".
+        ¿Qué estrategias puedo seguir para tener éxito en este curso?`;
+
+      const res = await fetch("/api/recomendations", {
+        method: "POST",
+        body: JSON.stringify({ prompt }),
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = await res.json();
+      await simulateStream(data.data);
+    } catch (error) {
+      setGeminiResponse("Hubo un error al obtener la recomendación.");
+      setModalOpen(true);
+    } finally {
+      setLoadingGemini(false);
+    }
+  };
+
   const [loadingCourses, setLoadingCourses] = useState(true);
   const [loadingAssignments, setLoadingAssignments] = useState(false);
   const [assignmentError, setAssignmentError] = useState<string | null>(null);
@@ -133,8 +182,66 @@ export default function CanvasInfoPage() {
               ))}
             </ul>
           )}
+           <div className="mt-6">
+              <button
+                onClick={handleGeminiClick}
+                disabled={loadingGemini}
+                className="rounded bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+              >
+                {loadingGemini ? "Consultando..." : "Recomendar con Gemini"}
+              </button>
+            </div>
         </div>
       )}
+
+      <div className="mt-12">
+        <h2 className="mb-4 text-2xl font-semibold">Calendario de Evaluaciones</h2>
+
+        {loadingEvents ? (
+          <p>Cargando calendario...</p>
+        ) : (
+          <div className="flex flex-col gap-6 lg:flex-row">
+            <div>
+              <Calendar
+                onChange={(date) => setSelectedDate(date as Date)}
+                value={selectedDate}
+                tileContent={renderTileContent(events)}
+              />
+            </div>
+
+            <div className="flex-1">
+              {selectedDate && (
+                <>
+                  <h3 className="mb-2 text-lg font-medium">
+                    Evaluaciones para {selectedDate.toLocaleDateString("es-CL")}
+                  </h3>
+                  {eventosDelDia.length === 0 ? (
+                    <p className="text-gray-500">No hay evaluaciones este día.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {eventosDelDia.map((ev) => (
+                        <li key={`event-${ev.id}-${ev.start_at}`} className="rounded border bg-white p-3 shadow-sm">
+                          <p className="font-semibold">{ev.title}</p>
+                          <p className="text-sm text-gray-600">Curso: {ev.context_name}</p>
+                          <p className="text-sm text-gray-500">
+                            Hora: {new Date(ev.start_at).toLocaleTimeString("es-CL")}
+                          </p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <GeminiModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        message={geminiResponse}
+      />
     </div>
   );
 }
