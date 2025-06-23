@@ -2,7 +2,7 @@ import { esES } from "@clerk/localizations";
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-
+import CanvasInitializer from "@/components/CanvasInitializer";
 import Navbar from "@/components/Navbar";
 
 import "./globals.css";
@@ -20,6 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <html lang="es">
         <body className={inter.className}>
           <Navbar />
+          <CanvasInitializer />
           <main>{children}</main>
         </body>
       </html>
