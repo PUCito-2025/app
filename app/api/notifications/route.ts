@@ -10,9 +10,7 @@ export async function GET(request: NextRequest) {
   try {
     const { userId } = await auth();
 
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
@@ -20,8 +18,9 @@ export async function GET(request: NextRequest) {
     const isRead = searchParams.get("isRead");
     const typeParam = searchParams.get("type");
 
+    // NOTE: Ojo que esto está hardcodeado ya que por ahora solo podemos enviar correos fake por resend
     const filters: any = {
-      userId,
+      userId: "test-user-ignacio",
       limit,
       offset,
       ...(isRead !== null && { isRead: isRead === "true" }),

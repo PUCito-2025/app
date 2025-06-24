@@ -7,11 +7,9 @@ export async function PUT() {
   try {
     const { userId } = await auth();
 
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const result = await NotificationService.markAllAsRead(userId);
+    const result = await NotificationService.markAllAsRead("test-user-ignacio");
 
     return NextResponse.json({ updated: result.count });
   } catch (error) {

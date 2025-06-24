@@ -7,9 +7,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
   try {
     const { userId } = await auth();
 
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const params = await context.params;
     const notificationId = parseInt(params.id, 10);
@@ -18,7 +16,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
       return NextResponse.json({ error: "Invalid notification ID" }, { status: 400 });
     }
 
-    const notification = await NotificationService.markAsRead(notificationId, userId);
+    const notification = await NotificationService.markAsRead(notificationId, "test-user-ignacio");
 
     return NextResponse.json({ notification });
   } catch (error) {
