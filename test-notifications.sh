@@ -34,19 +34,19 @@ print_error() {
 call_api() {
     local type=$1
     local email_flag=$2
-    
+
     if [ "$email_flag" = "true" ]; then
         local payload='{"type": "'$type'", "email": true}'
     else
         local payload='{"type": "'$type'"}'
     fi
-    
+
     print_status "Sending $type notification request..."
-    
+
     response=$(curl -s -X POST "$SERVER_URL/api/test/manual-notifications" \
         -H "Content-Type: application/json" \
         -d "$payload")
-    
+
     if [ $? -eq 0 ]; then
         echo "$response" | jq . 2>/dev/null || echo "$response"
     else
@@ -108,23 +108,23 @@ case "$1" in
     "all")
         print_status "Running all email tests..."
         echo ""
-        
+
         print_status "1. Seeding test data..."
         call_api "seed" "false"
         echo ""
-        
+
         print_status "2. Testing weekly summary email..."
         call_api "weekly" "true"
         echo ""
-        
+
         print_status "3. Testing daily study plan email..."
         call_api "daily" "true"
         echo ""
-        
+
         print_status "4. Testing tracking reminder email..."
         call_api "tracking" "true"
         echo ""
-        
+
         print_success "All tests completed!"
         ;;
     "help"|"--help"|"-h"|"")

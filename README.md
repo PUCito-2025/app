@@ -23,7 +23,7 @@ Para los builds de producción, estos pueden ser vistos desde Vercel.
 
 This app includes a scheduled notification system that sends emails for:
 - 📅 **Weekly Summary** (Mondays 8am Chilean time)
-- 📚 **Daily Study Plan** (Tue-Sun 8am Chilean time)  
+- 📚 **Daily Study Plan** (Tue-Sun 8am Chilean time)
 - ⏱️ **Tracking Reminder** (Daily 2pm Chilean time)
 
 ### Testing Notifications

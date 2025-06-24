@@ -304,14 +304,20 @@ export class NotificationService {
     type: NotificationType;
   }) {
     try {
-      // For now, we'll use a placeholder email since we don't have user email in the notification
-      // In a real implementation, you'd want to fetch user email from a User model/table
-      const userEmail = `user-${notification.userId}@example.com`;
+      // Use verified email for testing purposes
+      // In production, you'd fetch the user's actual email from Clerk or user database
+      const userEmail = "citopuc@gmail.com";
 
-      await EmailService.sendNotificationEmail(userEmail, notification.title, notification.message, notification.type);
+      await EmailService.sendNotificationEmail(
+        userEmail,
+        notification.title,
+        notification.message,
+        notification.type,
+        "onboarding@resend.dev" // Use verified FROM address
+      );
 
       // eslint-disable-next-line no-console
-      console.log(`Email notification sent successfully: ${notification.title}`);
+      console.log(`Email notification sent successfully to ${userEmail}: ${notification.title}`);
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error(`Failed to send email notification: ${error instanceof Error ? error.message : "Unknown error"}`);

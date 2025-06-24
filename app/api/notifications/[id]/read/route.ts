@@ -27,3 +27,8 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+// Also support POST method for compatibility
+export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  return PUT(request, context);
+}

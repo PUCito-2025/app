@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
+import NotificationPopover from "@/components/NotificationPopover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -50,6 +51,7 @@ export default function Navbar() {
             <SignUpButton mode="modal" />
           </SignedOut>
           <SignedIn>
+            <NotificationPopover />
             <UserButton />
           </SignedIn>
         </div>
@@ -76,7 +78,10 @@ export default function Navbar() {
               </SignInButton>
             </SignedOut>
             <SignedIn>
-              <UserButton />
+              <div className="flex items-center gap-2">
+                <NotificationPopover />
+                <UserButton />
+              </div>
             </SignedIn>
           </div>
         </div>
