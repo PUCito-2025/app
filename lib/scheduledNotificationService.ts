@@ -12,7 +12,7 @@ export interface ScheduledNotificationData {
   metadata?: Record<string, unknown>;
 }
 
-export class ScheduledNotificationService {
+class ScheduledNotificationService {
   /**
    * Create weekly summary notification (Mondays at 8 AM)
    * Summary of upcoming assignments and study plans

@@ -27,7 +27,7 @@ export interface SendEmailOptions {
   from?: string;
 }
 
-export class EmailService {
+class EmailService {
   private static readonly DEFAULT_FROM = process.env.FROM_EMAIL || "noreply@yourdomain.com";
 
   /**

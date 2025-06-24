@@ -3,20 +3,8 @@
  */
 const config = {
   // ─── WHAT TO SCAN ─────────────────────────────────────────────────────────────
-  entry: [
-    "app/**/*.{ts,tsx}",
-    "components/**/*.{ts,tsx}",
-    "utils/**/*.{ts,tsx}",
-    "lib/**/*.{ts,tsx}",
-    "hooks/**/*.{ts,tsx}",
-  ],
-  project: [
-    "app/**/*.{ts,tsx}",
-    "components/**/*.{ts,tsx}",
-    "utils/**/*.{ts,tsx}",
-    "lib/**/*.{ts,tsx}",
-    "hooks/**/*.{ts,tsx}",
-  ],
+  entry: ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}", "utils/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}"],
+  project: ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}", "utils/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}"],
 
   // ─── IGNORE SPECIFIC FILES ─────────────────────────────────────────────────────
   // don’t report issues in your own config
@@ -24,7 +12,7 @@ const config = {
 
   // ─── IGNORE DEPENDENCIES YOU KNOW YOU NEED ────────────────────────────────────
   // Knip will not report these as “unused”
-  ignoreDependencies: ["@clerk/nextjs", "postcss"],
+  ignoreDependencies: [],
 
   // ─── ONLY REPORT UNUSED FILES & EXPORTS ────────────────────────────────────────
   // these flags are CLI‐only, so you’ll still pass them on the command line:
