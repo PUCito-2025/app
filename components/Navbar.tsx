@@ -3,12 +3,22 @@
 import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import { Book, Menu } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+const paths = [
+  { name: "Inicio", href: "/" },
+  { name: "Canvas", href: "/canvasInfo" },
+  { name: "Planificador", href: "/tracker" },
+  { name: "Monitoreo Rendimiento", href: "/monitoreo" },
+];
+
 export default function Navbar() {
+  const currentPath = usePathname();
+
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -24,12 +34,17 @@ export default function Navbar() {
 
         {/* Desktop Nav Links */}
         <div className="hidden items-center gap-6 text-sm font-medium md:flex">
-          <Link href="/" className="text-blue-600">
-            Home
-          </Link>
-          <Link href="/canvasInfo">Canvas</Link>
-          <Link href="/tracker">Planificador</Link>
-          <Link href="/monitoreo">Monitoreo Rendimiento</Link>
+          {paths.map((path) => (
+            <Link
+              key={path.name}
+              href={path.href}
+              className={`${
+                currentPath === path.href ? "text-blue-600" : "text-gray-800 hover:text-blue-600"
+              } transition-colors`}
+            >
+              {path.name}
+            </Link>
+          ))}
           <SignedOut>
             <SignInButton mode="modal" />
             <SignUpButton mode="modal" />
