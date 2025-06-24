@@ -13,7 +13,15 @@
     "test": "vitest",
     "test:coverage": "vitest --coverage.enabled true",
     "prepare": "husky",
-    "knip": "knip"
+    "knip": "knip",
+    "test:notifications": "./test-notifications.sh help",
+    "test:notifications:check": "./test-notifications.sh check",
+    "test:notifications:seed": "./test-notifications.sh seed",
+    "test:notifications:weekly": "./test-notifications.sh weekly",
+    "test:notifications:daily": "./test-notifications.sh daily",
+    "test:notifications:tracking": "./test-notifications.sh tracking",
+    "test:notifications:all": "./test-notifications.sh all",
+    "test:notifications:cleanup": "./test-notifications.sh cleanup"
   },
   "dependencies": {
     "@clerk/localizations": "^3.14.4",

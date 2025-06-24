@@ -45,7 +45,8 @@ class EmailService {
     });
 
     if (error) {
-      throw new Error(`Failed to send email: ${error.message}`);
+      console.error("Resend API error:", error);
+      throw new Error(`Failed to send email: ${JSON.stringify(error)}`);
     }
 
     return data;
@@ -54,7 +55,7 @@ class EmailService {
   /**
    * Send notification email
    */
-  static async sendNotificationEmail(userEmail: string, title: string, message: string, notificationType: string) {
+  static async sendNotificationEmail(userEmail: string, title: string, message: string, notificationType: string, fromEmail?: string) {
     const template = this.getNotificationTemplate(title, message, notificationType);
 
     return this.sendEmail({
@@ -62,6 +63,7 @@ class EmailService {
       subject: template.subject,
       html: template.html,
       text: template.text,
+      from: fromEmail,
     });
   }
 
