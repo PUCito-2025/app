@@ -19,6 +19,46 @@ Para los builds de producción, estos pueden ser vistos desde Vercel.
 - **Health-check API**: Visita [`/api/health`](http://localhost:3000/api/health) para verificar que el backend responde con `{ status: "ok" }`.
 - **Páginas protegidas**: Cualquier página que use Clerk requiere autenticación;
 
+## Notification System
+
+This app includes a scheduled notification system that sends emails for:
+- 📅 **Weekly Summary** (Mondays 8am Chilean time)
+- 📚 **Daily Study Plan** (Tue-Sun 8am Chilean time)
+- ⏱️ **Tracking Reminder** (Daily 2pm Chilean time)
+
+### Testing Notifications
+
+You can test the notification system using several methods:
+
+**Using NPM scripts (recommended):**
+```bash
+npm run test:notifications           # Show help
+npm run test:notifications:check    # Check server status
+npm run test:notifications:seed     # Create test data
+npm run test:notifications:weekly   # Test weekly email
+npm run test:notifications:daily    # Test daily email
+npm run test:notifications:tracking # Test tracking email
+npm run test:notifications:all      # Run all tests
+```
+
+**Using Make commands:**
+```bash
+make help      # Show available commands
+make check     # Check server status
+make weekly    # Test weekly notification
+make all       # Run all tests
+```
+
+**Using shell script directly:**
+```bash
+./test-notifications.sh help
+./test-notifications.sh weekly
+```
+
+📧 Test emails are sent to: `citopuc@gmail.com`
+
+For detailed testing instructions, see [`NOTIFICATION_TESTING.md`](./NOTIFICATION_TESTING.md).
+
 ## Troubleshooting
 - **Error de importación `@/...`**: Asegúrate de tener el alias configurado en `tsconfig.json` y en `vite.config.ts` (o `vitest.config.ts`).
 - **Vitest sin tests**: Crea un archivo `tests/example.test.ts` con un test simple (por ejemplo, `1 + 1 = 2`) para asegurarte de que funciona.

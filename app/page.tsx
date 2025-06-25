@@ -1,8 +1,14 @@
 import Footer from "@/components/Footer";
+import NotificationPanel from "@/components/NotificationPanel";
 
 export default function HomePage() {
   return (
-    <div className="flex min-h-screen flex-col bg-blue-50">
+    <div className="flex h-full flex-col bg-blue-50">
+      {/* Header with notifications */}
+      <header className="flex justify-end p-4">
+        <NotificationPanel />
+      </header>
+
       <div className="flex flex-grow items-center justify-center px-4 py-0 text-center">
         <div>
           <h1 className="text-2xl font-bold text-blue-900 md:text-4xl">

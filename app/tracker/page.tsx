@@ -1,24 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
 import { useUser } from "@clerk/nextjs";
-import { Input } from "@/components/ui/input";
+import { addDays, format } from "date-fns";
+import { useEffect, useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { format, addDays } from "date-fns";
+import { Input } from "@/components/ui/input";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+interface Course {
+  id: number;
+  name: string;
+  code: string;
+}
+
+interface StudyPlan {
+  id: number;
+  courseId: number;
+  userId: string;
+  planDate: string;
+  studiedHours: number;
+  recommendedHours: number;
+}
 
 export default function StudyPlanner() {
   const { user, isLoaded } = useUser();
   const userId = user?.id;
 
-  const [courses, setCourses] = useState<any[]>([]);
-  const [studyPlans, setStudyPlans] = useState<any[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [studyPlans, setStudyPlans] = useState<StudyPlan[]>([]);
   const [selectedCourse, setSelectedCourse] = useState("");
   const [date, setDate] = useState("");
   const [hours, setHours] = useState("");
@@ -36,13 +46,22 @@ export default function StudyPlanner() {
   useEffect(() => {
     if (!userId) return;
     (async () => {
-      const [{ data: cData }, { data: pData }] = await Promise.all([
-        supabase.from("Course").select("id, name, code"),
-        supabase.from("StudyPlan").select("*").eq("userId", userId),
-      ]);
-      setCourses(cData || []);
-      setStudyPlans(pData || []);
-      setLoading(false);
+      try {
+        const [coursesRes, studyPlansRes] = await Promise.all([
+          fetch("/api/courses"),
+          fetch(`/api/study-plans?userId=${userId}`),
+        ]);
+
+        const coursesData = await coursesRes.json();
+        const studyPlansData = await studyPlansRes.json();
+
+        setCourses(coursesData.courses || []);
+        setStudyPlans(studyPlansData.studyPlans || []);
+      } catch (error) {
+        console.error("Error loading data:", error);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [userId]);
 
@@ -51,58 +70,47 @@ export default function StudyPlanner() {
     if (!selectedCourse || !date || !hours || !userId) return;
     const courseId = parseInt(selectedCourse, 10);
 
-    // Busca plan existente sin excepción si no existe
-    const { data: existingPlan, error: fetchError } = await supabase
-      .from("StudyPlan")
-      .select("*")
-      .eq("courseId", courseId)
-      .eq("planDate", date)
-      .eq("userId", userId)
-      .maybeSingle();
-
-    if (fetchError && fetchError.code !== "PGRST116") {
-      console.error("Error buscando plan:", fetchError);
-      return;
-    }
-
-    let res;
-    if (existingPlan) {
-      // Update
-      res = await supabase
-        .from("StudyPlan")
-        .update({ studiedHours: existingPlan.studiedHours + parseInt(hours, 10) })
-        .eq("id", existingPlan.id)
-        .select()
-        .maybeSingle();
-    } else {
-      // Insert
-      res = await supabase
-        .from("StudyPlan")
-        .insert({
+    try {
+      const response = await fetch("/api/study-plans", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
           courseId,
           userId,
           planDate: date,
           studiedHours: parseInt(hours, 10),
-          recommendedHours: 0,
-        })
-        .select()
-        .maybeSingle();
-    }
+        }),
+      });
 
-    if (res.error) {
-      console.error("Error guardando plan:", res.error);
-      return;
-    }
-
-    // Actualiza estado local sin recargar
-    setStudyPlans((prev) => {
-      if (existingPlan) {
-        return prev.map((p) => (p.id === existingPlan.id ? res.data! : p));
+      if (!response.ok) {
+        throw new Error("Failed to save study plan");
       }
-      return [...prev, res.data!];
-    });
 
-    setHours("");
+      const result = await response.json();
+      const updatedPlan = result.studyPlan;
+
+      // Actualiza estado local sin recargar
+      setStudyPlans((prev) => {
+        const existingIndex = prev.findIndex(
+          (p) => p.courseId === courseId && p.planDate.split("T")[0] === date && p.userId === userId,
+        );
+
+        if (existingIndex >= 0) {
+          // Update existing plan
+          const updated = [...prev];
+          updated[existingIndex] = updatedPlan;
+          return updated;
+        }
+        // Add new plan
+        return [...prev, updatedPlan];
+      });
+
+      setHours("");
+    } catch (error) {
+      // Handle error silently in production
+    }
   };
 
   if (!isLoaded) return <p>Cargando usuario…</p>;
@@ -110,73 +118,62 @@ export default function StudyPlanner() {
   if (loading) return <p>Cargando planificación…</p>;
 
   // Genera fechas de la semana
-  const weekDates = [...Array(7)].map((_, i) =>
-    format(addDays(weekStart, i), "yyyy-MM-dd")
-  );
+  const weekDates = [...Array(7)].map((_, i) => format(addDays(weekStart, i), "yyyy-MM-dd"));
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 p-6">
       {/* Formulario de registro */}
       <Card className="mx-auto max-w-4xl">
-        <CardContent className="flex flex-col sm:flex-row sm:space-x-4 gap-4 justify-center items-center w-full">
-          <select
-            className="p-2 border rounded w-full sm:w-1/4"
-            value={selectedCourse}
-            onChange={(e) => setSelectedCourse(e.target.value)}
-          >
-            <option value="">Selecciona curso</option>
-            {courses.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} ({c.code})
-              </option>
-            ))}
-          </select>
-          <Input
-            type="date"
-            className="w-full sm:w-1/4"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
-          <Input
-            type="number"
-            placeholder="Horas"
-            className="w-full sm:w-1/4"
-            value={hours}
-            onChange={(e) => setHours(e.target.value)}
-          />
-          <Button onClick={handleRegister}>Registrar</Button>
+        <CardContent>
+          <div className="flex w-full flex-col items-center justify-center gap-4 sm:flex-row sm:space-x-4">
+            <select
+              className="w-full rounded border p-2 sm:w-1/4"
+              value={selectedCourse}
+              onChange={(e) => setSelectedCourse(e.target.value)}
+            >
+              <option value="">Selecciona curso</option>
+              {courses.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name} ({c.code})
+                </option>
+              ))}
+            </select>
+            <Input type="date" className="w-full sm:w-1/4" value={date} onChange={(e) => setDate(e.target.value)} />
+            <Input
+              type="number"
+              placeholder="Horas"
+              className="w-full sm:w-1/4"
+              value={hours}
+              onChange={(e) => setHours(e.target.value)}
+            />
+            <Button onClick={handleRegister}>Registrar</Button>
+          </div>
         </CardContent>
       </Card>
 
       {/* Navegación de semanas */}
-      <div className="flex justify-center items-center space-x-4">
-        <Button variant="outline" onClick={() => setWeekStart(ws => addDays(ws, -7))}>
+      <div className="flex items-center justify-center space-x-4">
+        <Button variant="outline" onClick={() => setWeekStart((ws) => addDays(ws, -7))}>
           &lt; Semana anterior
         </Button>
         <span className="font-semibold">
           {format(weekStart, "dd/MM/yyyy")} – {format(addDays(weekStart, 6), "dd/MM/yyyy")}
         </span>
-        <Button variant="outline" onClick={() => setWeekStart(ws => addDays(ws, +7))}>
+        <Button variant="outline" onClick={() => setWeekStart((ws) => addDays(ws, +7))}>
           Semana siguiente &gt;
         </Button>
       </div>
 
       {/* Calendario */}
-      <div className="grid grid-cols-7 gap-4 max-w-6xl mx-auto">
+      <div className="mx-auto grid max-w-6xl grid-cols-7 gap-4">
         {weekDates.map((day) => (
-          <div key={day} className="bg-blue-100 p-4 rounded-xl min-h-[150px]">
-            <div className="font-bold text-sm mb-3">
-              {format(new Date(day), "EEE dd/MM")}
-            </div>
+          <div key={day} className="min-h-[150px] rounded-xl bg-blue-100 p-4">
+            <div className="mb-3 text-sm font-bold">{format(new Date(day), "EEE dd/MM")}</div>
             <div className="space-y-3 text-sm">
               {courses.map((course) => {
-                const p = studyPlans.find(sp => {
+                const p = studyPlans.find((sp) => {
                   const planKey = sp.planDate.split("T")[0];
-                  return (
-                    sp.courseId === course.id &&
-                    planKey === day &&
-                    sp.userId === userId
-                  );
+                  return sp.courseId === course.id && planKey === day && sp.userId === userId;
                 });
                 const studied = p?.studiedHours ?? 0;
                 const recommended = p?.recommendedHours ?? 0;
@@ -185,11 +182,7 @@ export default function StudyPlanner() {
                 return (
                   <div
                     key={course.id}
-                    className={`p-2 rounded shadow ${
-                      isMissing
-                        ? "bg-red-100 border border-red-400"
-                        : "bg-white"
-                    }`}
+                    className={`rounded p-2 shadow ${isMissing ? "border border-red-400 bg-red-100" : "bg-white"}`}
                   >
                     <p className="font-medium text-blue-600">
                       {course.name} ({course.code})
@@ -197,11 +190,7 @@ export default function StudyPlanner() {
                     <p>
                       Estudiado: <strong>{studied}h</strong> / Recomendado: <strong>{recommended}h</strong>
                     </p>
-                    {isMissing && (
-                      <p className="text-xs text-red-600 font-semibold">
-                        ¡Horas insuficientes!
-                      </p>
-                    )}
+                    {isMissing && <p className="text-xs font-semibold text-red-600">¡Horas insuficientes!</p>}
                   </div>
                 );
               })}

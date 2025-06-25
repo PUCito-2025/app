@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "generated"
 }
 
 datasource db {
@@ -47,19 +46,49 @@ model StudyPlan {
 }
 
 model Notification {
-  id           Int              @id @default(autoincrement())
-  type         NotificationType
-  title        String
-  message      String
-  isRead       Boolean          @default(false)
-  userId       String
-  assignmentId Int?
-  studyPlanId  Int?
-  assignment   Assignment?      @relation("AssignmentNotifications", fields: [assignmentId], references: [id])
-  studyPlan    StudyPlan?       @relation("StudyPlanNotifications", fields: [studyPlanId], references: [id])
+  id              Int                 @id @default(autoincrement())
+  type            NotificationType
+  title           String
+  message         String
+  isRead          Boolean             @default(false)
+  userId          String
+  assignmentId    Int?
+  studyPlanId     Int?
+  status          NotificationStatus  @default(PENDING)
+  deliveryType    DeliveryType        @default(EMAIL)
+  sentAt          DateTime?
+  failedAt        DateTime?
+  retryCount      Int                 @default(0)
+  maxRetries      Int                 @default(3)
+  errorMessage    String?
+  metadata        Json?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  assignment      Assignment?         @relation("AssignmentNotifications", fields: [assignmentId], references: [id])
+  studyPlan       StudyPlan?          @relation("StudyPlanNotifications", fields: [studyPlanId], references: [id])
+
+  @@index([userId, isRead])
+  @@index([status])
+  @@index([type, createdAt])
 }
 
 enum NotificationType {
   STUDY_PLAN
   ASSIGNMENT
+  REMINDER
+  DEADLINE_WARNING
+  COURSE_UPDATE
+  SYSTEM
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
+}
+
+enum DeliveryType {
+  EMAIL
+  IN_APP
 }

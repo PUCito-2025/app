@@ -29,7 +29,7 @@ export default function Footer() {
           </ul>
         </div>
       </div>
-      <div className="mt-4 text-center text-xs opacity-70">© 2025 PUCito. All rights reserved.</div>
+      <div className="mt-4 text-center text-xs opacity-70">© 2025 PUCito. Todos los derechos reservados.</div>
     </footer>
   );
 }
