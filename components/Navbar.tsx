@@ -30,6 +30,7 @@ export default function Navbar() {
           <Link href="/canvasInfo">Canvas</Link>
           <Link href="/tracker">Planificador</Link>
           <Link href="/monitoreo">Monitoreo Rendimiento</Link>
+          <Link href="/calendar">Calendario</Link>
           <SignedOut>
             <SignInButton mode="modal" />
             <SignUpButton mode="modal" />
